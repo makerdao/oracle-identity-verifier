@@ -106,8 +106,8 @@ verifyIdentityProof () {
 
 	#get owner of feed
 	echo "Querying owner of Feed..."
-	feedOwner=$(seth --rpc-url $ETH_RPC_URL call "$feedAddr" "owner()(address)")
-	if ! [[ $feedOwner =~ ^[0-9a-fA-F]{40}$ ]]; then
+	feedOwner=$(seth --to-address "$(seth --rpc-url $ETH_RPC_URL call "$feedAddr" "owner()(address)")")
+	if ! [[ $feedOwner =~ ^(0x){1}[0-9a-fA-F]{40}$ ]]; then
 		echo "Error - failed to retrieve valid feed owner"
 		echo "FAILED!"
 		exit 1
