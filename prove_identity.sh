@@ -15,7 +15,10 @@ FEED_ADDR="0x0000000000000000000000000000000000000000"
 #Leave these alone
 MEDIANIZER_ADDR="0x729D19f657BD0614b4985Cf1D82531c67569197B"
 ETH_RPC_URL="https://mainnet.infura.io/v3/7e7589fbfb8e4237b6ad945825a1d791"
+
+
 MSG="My feed address is $FEED_ADDR and my keybase username is $KEYBASE_USERNAME - $(date +"%s")"
+ETH_FROM=$(seth --to-address $ETH_FROM)
 
 
 #///////////////////////////////////////////////////////#
@@ -54,7 +57,7 @@ generateIdentityProof () {
 
 	#verify feed ownership
 	echo "verifying ownership of feed..."
-	owner=$(seth call --rpc-url $ETH_RPC_URL $FEED_ADDR "owner()(address)")
+	owner=$(seth --to-address "$(seth call --rpc-url $ETH_RPC_URL $FEED_ADDR "owner()(address)")")
 	if ! [[ $ETH_FROM == *"$owner" ]]; then
 		echo "Error - Owner of Feed ($FEED_ADDR) is $owner, not $ETH_FROM"
 		exit 1
@@ -111,7 +114,7 @@ verifyIdentityProof () {
 	fi
 
 	#convert message to hash
-	hash=$(keccak256Hash "0x" "$_msg")
+	hash=$(keccak256Hash "0x" "$msg")
 	if [[ ! "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
 		echo "FAILED!"
@@ -121,8 +124,7 @@ verifyIdentityProof () {
 	#get signer of signature
 	echo "Recovering signer from signature and comparing to feed owner"
 	signer=$(ethsign recover --data "$hash" --sig "$sig")
-	#remove 0x prefix and conver to lowercase
-	signer=$(echo "${signer#*0x}" | tr '[:upper:]' '[:lower:]')
+	signer=$(seth --to-address "$signer")
 	#verify signer is feed owner
 	if ! [[ "$signer" == "$feedOwner" ]]; then
 		echo "Error - signer ($signer) does not match up with feed owner ($feedOwner)"
