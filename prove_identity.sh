@@ -6,28 +6,12 @@
 #                                                       #
 #///////////////////////////////////////////////////////#
 
-#Proof Generation Configurables
-ETH_FROM="" 
-ETH_KEYSTORE=""
-ETH_PASSWORD=""
-KEYBASE_USERNAME=""
-FEED_ADDR=""
-
-#Leave these alone
 MEDIANIZER_ADDR="0x729D19f657BD0614b4985Cf1D82531c67569197B"
 ETH_RPC_URL="https://mainnet.infura.io/v3/7e7589fbfb8e4237b6ad945825a1d791"
 
-FEED_ADDR=$(seth --to-address $FEED_ADDR)
-ETH_FROM=$(seth --to-address $ETH_FROM)
-MSG="$FEED_ADDR - $KEYBASE_USERNAME - $(date +"%s")"
-
-#Proof Verification Configurables
-#MSG=""
-#sig="0x992bdeb99d0a2d1fb0dd372ad2d441d44eb62a64e07cce702b270ed1110129d977d98d3f9dad4497e0410a6fc078a44e0cdc1e950100eff04fec196ea0c2dda71b" 
-
 #///////////////////////////////////////////////////////#
 #                                                       #
-#                       Functions                       #
+#                       Execution                       #
 #                                                       #
 #///////////////////////////////////////////////////////#
 
@@ -50,25 +34,35 @@ signMessage () {
 }
 
 #generate oracle identity proof
-generateIdentityProof () {
+generate () {
+	ETH_FROM="$1"
+	ETH_KEYSTORE="$2"
+	ETH_PASSWORD="$3"
+	FEED_ADDR="$4"
+	KEYBASE_USERNAME="$5"
+
+	FEED_ADDR=$(seth --to-address "$FEED_ADDR")
+	ETH_FROM=$(seth --to-address "$ETH_FROM")
+	MSG="$FEED_ADDR - $KEYBASE_USERNAME - $(date +"%s")"
+
 	#verify Oracle address
-	echo "verifying feed address is whitelisted..."
-	id=$(seth --to-dec "$(seth call --rpc-url $ETH_RPC_URL $MEDIANIZER_ADDR "indexes(address)(bytes12)" $FEED_ADDR)")
+	echo "Verifying feed address is whitelisted..."
+	id=$(seth --to-dec "$(seth call --rpc-url $ETH_RPC_URL $MEDIANIZER_ADDR "indexes(address)(bytes12)" "$FEED_ADDR")")
 	if ! [[ "$id" -gt 0 ]]; then
 		echo "Error - Feed ($FEED_ADDR) is not whitelisted"
 		exit 1
 	fi
 
 	#verify feed ownership
-	echo "verifying ownership of feed..."
-	owner=$(seth --to-address "$(seth call --rpc-url $ETH_RPC_URL $FEED_ADDR "owner()(address)")")
+	echo "Verifying ownership of feed..."
+	owner=$(seth --to-address "$(seth call --rpc-url $ETH_RPC_URL "$FEED_ADDR" "owner()(address)")")
 	if ! [[ $ETH_FROM == *"$owner" ]]; then
 		echo "Error - Owner of Feed ($FEED_ADDR) is $owner, not $ETH_FROM"
 		exit 1
 	fi
 
 	#get message hash
-	echo "hashing message..."
+	echo "Hashing message..."
 	hash=$(keccak256Hash "0x" "$MSG")
 	if [[ ! "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
@@ -76,7 +70,7 @@ generateIdentityProof () {
 	fi
 
 	#sign message hash
-	echo "signing message..."
+	echo "Signing message..."
 	sig=$(signMessage "$hash")
 	if [[ ! "$sig" =~ ^(0x){1}[0-9a-f]{130}$ ]]; then
 		echo "Error - Failed to generate valid signature"
@@ -91,10 +85,13 @@ generateIdentityProof () {
 	echo "Message: $MSG"
 	echo "Signature: $sig"
 	echo ""
+
+	echo "Verifying generated oracle proof..."
+	verify "$sig" "$MSG"
 }
 
 #verifies oracle identity proof
-verifyIdentityProof () {
+verify () {
 	sig="$1"
 	msg="$2"
 
@@ -141,12 +138,3 @@ verifyIdentityProof () {
 	echo ""
 	echo "Signer is an Oracle"
 }
-
-#///////////////////////////////////////////////////////#
-#                                                       #
-#                       Execution                       #
-#                                                       #
-#///////////////////////////////////////////////////////#
-
-generateIdentityProof
-verifyIdentityProof "$sig" "$MSG"
