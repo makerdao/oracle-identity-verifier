@@ -6,20 +6,21 @@
 #                                                       #
 #///////////////////////////////////////////////////////#
 
-ETH_FROM="0x0000000000000000000000000000000000000000" 
+#Change these
+ETH_FROM="" 
 ETH_KEYSTORE=""
 ETH_PASSWORD=""
 KEYBASE_USERNAME=""
-FEED_ADDR="0x0000000000000000000000000000000000000000"
+FEED_ADDR=""
 
 #Leave these alone
 MEDIANIZER_ADDR="0x729D19f657BD0614b4985Cf1D82531c67569197B"
 ETH_RPC_URL="https://mainnet.infura.io/v3/7e7589fbfb8e4237b6ad945825a1d791"
 
-
-MSG="My feed address is $FEED_ADDR and my keybase username is $KEYBASE_USERNAME - $(date +"%s")"
+FEED_ADDR=$(seth --to-address $FEED_ADDR)
 ETH_FROM=$(seth --to-address $ETH_FROM)
-
+MSG="$FEED_ADDR - $KEYBASE_USERNAME - $(date +"%s")"
+#sig="" 
 
 #///////////////////////////////////////////////////////#
 #                                                       #
@@ -96,7 +97,8 @@ verifyIdentityProof () {
 
 	#get feed addr from msg and verify feed addr is whitelisted
 	echo "Verifying Feed address is whitelisted..."
-	feedAddr=$(cut -d ' ' -f5 <<<"$msg")
+	feedAddr=$(echo "$msg" | awk '{print $1;}')
+	echo "feedAddr = $feedAddr"
 	index=$(seth --to-dec "$(seth call --rpc-url "$ETH_RPC_URL" "$MEDIANIZER_ADDR" "indexes(address)(bytes12)" "$feedAddr")")
 	if ! [[ $index -gt 0 ]]; then
 		echo "Error - Feed ($feedAddr) is not whitelisted"
@@ -145,5 +147,4 @@ verifyIdentityProof () {
 #///////////////////////////////////////////////////////#
 
 generateIdentityProof
-
 verifyIdentityProof "$sig" "$MSG"
