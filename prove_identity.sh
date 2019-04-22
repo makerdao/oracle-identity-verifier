@@ -6,7 +6,7 @@
 #                                                       #
 #///////////////////////////////////////////////////////#
 
-#Change these
+#Proof Generation Configurables
 ETH_FROM="" 
 ETH_KEYSTORE=""
 ETH_PASSWORD=""
@@ -20,7 +20,10 @@ ETH_RPC_URL="https://mainnet.infura.io/v3/7e7589fbfb8e4237b6ad945825a1d791"
 FEED_ADDR=$(seth --to-address $FEED_ADDR)
 ETH_FROM=$(seth --to-address $ETH_FROM)
 MSG="$FEED_ADDR - $KEYBASE_USERNAME - $(date +"%s")"
-#sig="" 
+
+#Proof Verification Configurables
+#MSG=""
+#sig="0x992bdeb99d0a2d1fb0dd372ad2d441d44eb62a64e07cce702b270ed1110129d977d98d3f9dad4497e0410a6fc078a44e0cdc1e950100eff04fec196ea0c2dda71b" 
 
 #///////////////////////////////////////////////////////#
 #                                                       #
@@ -98,7 +101,6 @@ verifyIdentityProof () {
 	#get feed addr from msg and verify feed addr is whitelisted
 	echo "Verifying Feed address is whitelisted..."
 	feedAddr=$(echo "$msg" | awk '{print $1;}')
-	echo "feedAddr = $feedAddr"
 	index=$(seth --to-dec "$(seth call --rpc-url "$ETH_RPC_URL" "$MEDIANIZER_ADDR" "indexes(address)(bytes12)" "$feedAddr")")
 	if ! [[ $index -gt 0 ]]; then
 		echo "Error - Feed ($feedAddr) is not whitelisted"
