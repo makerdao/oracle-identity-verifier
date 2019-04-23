@@ -11,7 +11,7 @@ ETH_FROM = the owner of the Oracle Feed (format 0x#####)\
 ETH_KEYSTORE = path to the directory containing the keystore file for ETH_FROM\
 ETH_PASSWORD = path to the file containing the password to unlock the keystore file for ETH_FROM\
 FEED_ADDR = public of your feed (format: 0x######)\
-KEYBASE_USERNAME = your username on keybase\
+KEYBASE_USERNAME = your username on keybase
 
 ## Verify Identity Proof:
 
@@ -20,4 +20,4 @@ KEYBASE_USERNAME = your username on keybase\
 where:
 
 SIG = the signed message signature\
-MSG = the message that was signed\
+MSG = the message that was signed

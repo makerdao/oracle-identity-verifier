@@ -82,8 +82,8 @@ generate () {
 	echo "SUCCESS!"
 	echo ""
 	echo "Please paste the following into your Keybase bio:"
-	echo "Message: $MSG"
-	echo "Signature: $sig"
+	echo "Msg: $MSG"
+	echo "Sig: $sig"
 	echo ""
 
 	echo "Verifying generated oracle proof..."
