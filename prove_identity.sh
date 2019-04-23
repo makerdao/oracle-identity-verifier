@@ -43,7 +43,14 @@ generate () {
 
 	FEED_ADDR=$(seth --to-address "$FEED_ADDR")
 	ETH_FROM=$(seth --to-address "$ETH_FROM")
-	MSG="$FEED_ADDR - $KEYBASE_USERNAME - $(date +"%s")"
+
+	time=$(date +"%s")
+	keybase_username_hex=$(seth --from-ascii "$KEYBASE_USERNAME")
+	MSG="$FEED_ADDR${keybase_username_hex:2}$time"
+	if ! [[ "$MSG" =~ ^(0x){1}[0-9a-fA-F]+$ ]]; then
+		echo "Error - Generated invalid message $MSG"
+		exit 1
+	fi
 
 	#verify Oracle address
 	echo "Verifying feed address is whitelisted..."
@@ -63,8 +70,8 @@ generate () {
 
 	#get message hash
 	echo "Hashing message..."
-	hash=$(keccak256Hash "0x" "$MSG")
-	if [[ ! "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
+	hash=$(keccak256Hash "$MSG")
+	if ! [[ "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
 		exit 1
 	fi
@@ -72,22 +79,24 @@ generate () {
 	#sign message hash
 	echo "Signing message..."
 	sig=$(signMessage "$hash")
-	if [[ ! "$sig" =~ ^(0x){1}[0-9a-f]{130}$ ]]; then
+	if ! [[ "$sig" =~ ^(0x){1}[0-9a-f]{130}$ ]]; then
 		echo "Error - Failed to generate valid signature"
 		exit 1
 	fi
+
+	prettyMsg="$FEED_ADDR-$KEYBASE_USERNAME-$time"
 
 	#print avatar
 	echo ""
 	echo "SUCCESS!"
 	echo ""
-	echo "Please paste the following into your Keybase bio:"
-	echo "Msg: $MSG"
+	echo "Please send the following to master_chief on Keybase:"
+	echo "Msg: $prettyMsg"
 	echo "Sig: $sig"
 	echo ""
 
 	echo "Verifying generated oracle proof..."
-	verify "$sig" "$MSG"
+	verify "$sig" "$prettyMsg"
 }
 
 #verifies oracle identity proof
@@ -97,7 +106,7 @@ verify () {
 
 	#get feed addr from msg and verify feed addr is whitelisted
 	echo "Verifying Feed address is whitelisted..."
-	feedAddr=$(echo "$msg" | awk '{print $1;}')
+	feedAddr=$(echo "$msg" | awk -F - '{print $1;}')
 	index=$(seth --to-dec "$(seth call --rpc-url "$ETH_RPC_URL" "$MEDIANIZER_ADDR" "indexes(address)(bytes12)" "$feedAddr")")
 	if ! [[ $index -gt 0 ]]; then
 		echo "Error - Feed ($feedAddr) is not whitelisted"
@@ -114,8 +123,15 @@ verify () {
 		exit 1
 	fi
 
+	#parse message
+	keybase_username=$(echo "$msg" | awk -F - '{print $2;}')
+	keybase_username_hex=$(seth --from-ascii "$keybase_username")
+	time=$(echo "$msg" | awk -F - '{print $3;}')
+	msg="$feedAddr${keybase_username_hex:2}$time"
+
+
 	#convert message to hash
-	hash=$(keccak256Hash "0x" "$msg")
+	hash=$(keccak256Hash "$msg")
 	if [[ ! "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
 		echo "FAILED!"
