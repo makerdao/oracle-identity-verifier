@@ -49,7 +49,7 @@ generate () {
 	MSG="$FEED_ADDR${keybase_username_hex:2}$time"
 	if ! [[ "$MSG" =~ ^(0x){1}[0-9a-fA-F]+$ ]]; then
 		echo "Error - Generated invalid message $MSG"
-		exit 1
+		return 1
 	fi
 
 	#verify Oracle address
@@ -57,7 +57,7 @@ generate () {
 	id=$(seth --to-dec "$(seth call --rpc-url $ETH_RPC_URL $MEDIANIZER_ADDR "indexes(address)(bytes12)" "$FEED_ADDR")")
 	if ! [[ "$id" -gt 0 ]]; then
 		echo "Error - Feed ($FEED_ADDR) is not whitelisted"
-		exit 1
+		return 1
 	fi
 
 	#verify feed ownership
@@ -65,7 +65,7 @@ generate () {
 	owner=$(seth --to-address "$(seth call --rpc-url $ETH_RPC_URL "$FEED_ADDR" "owner()(address)")")
 	if ! [[ $ETH_FROM == *"$owner" ]]; then
 		echo "Error - Owner of Feed ($FEED_ADDR) is $owner, not $ETH_FROM"
-		exit 1
+		return 1
 	fi
 
 	#get message hash
@@ -73,7 +73,7 @@ generate () {
 	hash=$(keccak256Hash "$MSG")
 	if ! [[ "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
-		exit 1
+		return 1
 	fi
 
 	#sign message hash
@@ -81,7 +81,7 @@ generate () {
 	sig=$(signMessage "$hash")
 	if ! [[ "$sig" =~ ^(0x){1}[0-9a-f]{130}$ ]]; then
 		echo "Error - Failed to generate valid signature"
-		exit 1
+		return 1
 	fi
 
 	prettyMsg="$FEED_ADDR-$KEYBASE_USERNAME-$time"
@@ -111,7 +111,7 @@ verify () {
 	if ! [[ $index -gt 0 ]]; then
 		echo "Error - Feed ($feedAddr) is not whitelisted"
 		echo "FAILED!"
-		exit 1
+		return 1
 	fi
 
 	#get owner of feed
@@ -120,7 +120,7 @@ verify () {
 	if ! [[ $feedOwner =~ ^(0x){1}[0-9a-fA-F]{40}$ ]]; then
 		echo "Error - failed to retrieve valid feed owner"
 		echo "FAILED!"
-		exit 1
+		return 1
 	fi
 
 	#parse message
@@ -135,7 +135,7 @@ verify () {
 	if [[ ! "$hash" =~ ^(0x){1}[0-9a-fA-F]{64}$ ]]; then
 		echo "Error - Failed to generate valid hash"
 		echo "FAILED!"
-		exit 1
+		return 1
 	fi
 
 	#get signer of signature
@@ -146,7 +146,7 @@ verify () {
 	if ! [[ "$signer" == "$feedOwner" ]]; then
 		echo "Error - signer ($signer) does not match up with feed owner ($feedOwner)"
 		echo "FAILED!"
-		exit 1
+		return 1
 	fi
 
 	echo ""
